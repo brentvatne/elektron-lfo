@@ -66,14 +66,14 @@ function generateSquare(phase) {
   return phase < 0.5 ? 1 : -1;
 }
 function generateSawtooth(phase) {
-  return phase * 2 - 1;
+  return 1 - phase * 2;
 }
 function generateExponential(phase) {
   const k = 4;
   return (Math.exp(phase * k) - 1) / (Math.exp(k) - 1);
 }
 function generateRamp(phase) {
-  return 1 - phase;
+  return phase;
 }
 function generateRandom(phase, state) {
   const stepsPerCycle = 16;

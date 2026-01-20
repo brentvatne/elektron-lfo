@@ -40,10 +40,10 @@ export function generateSquare(phase: number): number {
 
 /**
  * Sawtooth waveform - Bipolar
- * Linear rise from -1 to +1
+ * Linear fall from +1 to -1 (with positive depth)
  */
 export function generateSawtooth(phase: number): number {
-  return phase * 2 - 1;
+  return 1 - phase * 2;
 }
 
 /**
@@ -57,10 +57,10 @@ export function generateExponential(phase: number): number {
 
 /**
  * Ramp waveform - Unipolar (0 to +1)
- * Linear fall from +1 to 0
+ * Linear rise from 0 to +1
  */
 export function generateRamp(phase: number): number {
-  return 1 - phase;
+  return phase;
 }
 
 /**

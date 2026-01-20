@@ -123,22 +123,22 @@ describe('Square Waveform', () => {
 });
 
 describe('Sawtooth Waveform', () => {
-  test('starts at -1 at phase 0', () => {
-    expect(generateSawtooth(0)).toBe(-1);
+  test('starts at +1 at phase 0', () => {
+    expect(generateSawtooth(0)).toBe(1);
   });
 
   test('is 0 at phase 0.5', () => {
     expect(generateSawtooth(0.5)).toBe(0);
   });
 
-  test('approaches +1 at phase ~1', () => {
-    expect(generateSawtooth(1)).toBe(1);
-    expect(generateSawtooth(0.999)).toBeCloseTo(1, 2);
+  test('approaches -1 at phase ~1', () => {
+    expect(generateSawtooth(1)).toBe(-1);
+    expect(generateSawtooth(0.999)).toBeCloseTo(-1, 2);
   });
 
-  test('is bipolar and linear', () => {
-    expect(generateSawtooth(0.25)).toBeCloseTo(-0.5, 5);
-    expect(generateSawtooth(0.75)).toBeCloseTo(0.5, 5);
+  test('is bipolar and linear (falling)', () => {
+    expect(generateSawtooth(0.25)).toBeCloseTo(0.5, 5);
+    expect(generateSawtooth(0.75)).toBeCloseTo(-0.5, 5);
   });
 });
 
@@ -165,12 +165,12 @@ describe('Exponential Waveform', () => {
 });
 
 describe('Ramp Waveform', () => {
-  test('starts at 1 at phase 0', () => {
-    expect(generateRamp(0)).toBe(1);
+  test('starts at 0 at phase 0', () => {
+    expect(generateRamp(0)).toBe(0);
   });
 
-  test('ends at 0 at phase 1', () => {
-    expect(generateRamp(1)).toBe(0);
+  test('ends at 1 at phase 1', () => {
+    expect(generateRamp(1)).toBe(1);
   });
 
   test('is 0.5 at phase 0.5', () => {
@@ -183,9 +183,9 @@ describe('Ramp Waveform', () => {
     expect(Math.max(...samples)).toBeLessThanOrEqual(1);
   });
 
-  test('is linear', () => {
-    expect(generateRamp(0.25)).toBe(0.75);
-    expect(generateRamp(0.75)).toBe(0.25);
+  test('is linear (rising)', () => {
+    expect(generateRamp(0.25)).toBe(0.25);
+    expect(generateRamp(0.75)).toBe(0.75);
   });
 });
 
@@ -238,7 +238,7 @@ describe('generateWaveform', () => {
     expect(generateWaveform('SQR', 0.25, state).value).toBe(1);
     expect(generateWaveform('SAW', 0.5, state).value).toBe(0);
     expect(generateWaveform('EXP', 1, state).value).toBeCloseTo(1, 5);
-    expect(generateWaveform('RMP', 0, state).value).toBe(1);
+    expect(generateWaveform('RMP', 0, state).value).toBe(0);
   });
 });
 
