@@ -112,11 +112,23 @@ export function checkModeStop(
   const isForward = config.speed >= 0;
 
   if (config.mode === 'ONE') {
-    // ONE mode: Stop after completing one full cycle
-    // We detect this by checking if cycleCount has incremented (phase wrapped)
-    // and we've returned to or passed the start phase
+    // ONE mode: Stop after completing one full cycle back to startPhase
+    // For non-zero startPhase, we need to:
+    // 1. Wait for phase to wrap (cycleCount >= 1)
+    // 2. Then continue until we reach/pass the startPhase again
     if (state.cycleCount >= 1) {
-      return { shouldStop: true, cycleCompleted: true };
+      if (isForward) {
+        // Forward: stop when current phase reaches or passes startPhase after wrapping
+        // Handle the case where startPhase is 0 (stop immediately on wrap)
+        if (startPhase === 0 || currentPhase >= startPhase) {
+          return { shouldStop: true, cycleCompleted: true };
+        }
+      } else {
+        // Backward: stop when current phase reaches or goes below startPhase after wrapping
+        if (startPhase === 0 || currentPhase <= startPhase) {
+          return { shouldStop: true, cycleCompleted: true };
+        }
+      }
     }
   } else if (config.mode === 'HLF') {
     // HLF mode: Stop after half cycle (0.5 phase distance from start)
