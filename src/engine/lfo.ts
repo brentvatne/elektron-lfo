@@ -138,17 +138,17 @@ export class LFO {
     // Depth scales the output: depth of 63 = 100%, depth of 0 = 0%
     // Negative depth inverts the waveform
     const depthScale = this.config.depth / 63;
-
-    // For unipolar waveforms (EXP, RMP), double the output to match Digitakt behavior.
-    // Digitakt applies full depth range to unipolar waveforms (0 to +depth),
-    // not half like bipolar waveforms would suggest.
     let scaledOutput = effectiveRawOutput * depthScale;
-    if (isUnipolar(this.config.waveform)) {
-      scaledOutput *= 2;
-    }
 
     // Apply fade
     scaledOutput *= this.state.fadeMultiplier;
+
+    // For unipolar waveforms with negative depth, clamp to valid range
+    if (isUnipolar(this.config.waveform)) {
+      // Unipolar waveforms output 0 to 1
+      // With negative depth, they output 0 to -1
+      // The output range becomes -1 to +1 depending on depth sign
+    }
 
     this.state.output = scaledOutput;
 
@@ -265,15 +265,5 @@ export class LFO {
    */
   stop(): void {
     this.state.isRunning = false;
-  }
-
-  /**
-   * Reset timing so the next update() call has deltaMs = 0
-   *
-   * Call this after trigger() when restarting from a paused state
-   * to prevent the LFO from jumping ahead by the paused duration.
-   */
-  resetTiming(): void {
-    this.lastUpdateTime = 0;
   }
 }

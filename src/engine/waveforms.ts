@@ -48,13 +48,16 @@ export function generateSawtooth(phase: number): number {
 
 /**
  * Exponential waveform - Unipolar (0 to +1)
- * Exponential decay from 1 to 0 (matching Digitakt II behavior)
- * Starts at peak, decays toward center
+ * Decaying curve from 1 to 0 (matches Digitakt II behavior)
+ * Fast initial decay, slowing toward the end (true exponential decay shape)
  */
 export function generateExponential(phase: number): number {
-  const k = 4; // Steepness factor
-  // Decay curve: starts at 1, approaches 0
-  return Math.exp(-phase * k);
+  const k = 3; // Decay rate - controls steepness of decay
+  // True exponential decay: starts at 1, decays rapidly then slows
+  // Formula: (exp(-phase * k) - exp(-k)) / (1 - exp(-k))
+  // This normalizes to exactly [1, 0] range
+  const expK = Math.exp(-k);
+  return (Math.exp(-phase * k) - expK) / (1 - expK);
 }
 
 /**

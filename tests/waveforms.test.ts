@@ -148,8 +148,8 @@ describe('Exponential Waveform', () => {
   });
 
   test('decays toward 0 at phase 1', () => {
-    // Exponential decay: e^(-4) ≈ 0.018
-    expect(generateExponential(1)).toBeCloseTo(0.018, 2);
+    // Normalized exponential decay reaches exactly 0 at phase 1
+    expect(generateExponential(1)).toBeCloseTo(0, 5);
   });
 
   test('is unipolar (0 to +1)', () => {
