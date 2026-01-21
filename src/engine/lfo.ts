@@ -289,9 +289,17 @@ export class LFO {
   }
 
   /**
-   * Stop the LFO
+   * Stop the LFO (pause, keeps current position)
    */
   stop(): void {
     this.state.isRunning = false;
+  }
+
+  /**
+   * Reset timing so the next update() call treats it as the first call (deltaMs = 0).
+   * Use this when resuming from pause or starting transport to avoid large phase jumps.
+   */
+  resetTiming(): void {
+    this.lastUpdateTime = 0;
   }
 }

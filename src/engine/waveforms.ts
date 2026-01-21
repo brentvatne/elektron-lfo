@@ -39,10 +39,10 @@ export function generateSquare(phase: number): number {
 
 /**
  * Sawtooth waveform - Bipolar
- * Linear rise from -1 to +1 (matches Digitakt II behavior)
+ * Linear fall from +1 to -1 (matches Digitakt II behavior)
  */
 export function generateSawtooth(phase: number): number {
-  return phase * 2 - 1;
+  return 1 - phase * 2;
 }
 
 /**

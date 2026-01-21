@@ -66,7 +66,7 @@ function generateSquare(phase) {
   return phase < 0.5 ? 1 : -1;
 }
 function generateSawtooth(phase) {
-  return phase * 2 - 1;
+  return 1 - phase * 2;
 }
 function generateExponential(phase) {
   const k = 3;
