@@ -6,7 +6,7 @@
   "module": "src/index.ts",
   "types": "dist/index.d.ts",
   "bin": {
-    "elektron-lfo": "./src/cli/index.ts"
+    "elektron-lfo": "src/cli/index.ts"
   },
   "scripts": {
     "dev": "bun run src/cli/index.ts",
