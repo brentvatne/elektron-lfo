@@ -1,9 +1,8 @@
 /**
  * Waveform generators for Elektron Digitakt II LFO
  *
- * Waveform types:
- * - Bipolar (-1 to +1): TRI, SIN, SQR, SAW, RND
- * - Unipolar (0 to +1): EXP, RMP
+ * Most waveforms are bipolar (-1 to +1).
+ * RMP and EXP are unipolar (0 to +1) - depth parameter handles negative modulation.
  */
 
 import type { Waveform, LFOState } from './types';
@@ -40,29 +39,27 @@ export function generateSquare(phase: number): number {
 
 /**
  * Sawtooth waveform - Bipolar
- * Linear fall from +1 to -1 (with positive depth)
+ * Linear rise from -1 to +1 (matches Digitakt II behavior)
  */
 export function generateSawtooth(phase: number): number {
-  return 1 - phase * 2;
+  return phase * 2 - 1;
 }
 
 /**
  * Exponential waveform - Unipolar (0 to +1)
- * Decaying curve from 1 to 0 (matches Digitakt II behavior)
+ * Decaying curve from +1 to 0 (matches Digitakt II behavior)
  * Fast initial decay, slowing toward the end (true exponential decay shape)
  */
 export function generateExponential(phase: number): number {
   const k = 3; // Decay rate - controls steepness of decay
-  // True exponential decay: starts at 1, decays rapidly then slows
-  // Formula: (exp(-phase * k) - exp(-k)) / (1 - exp(-k))
-  // This normalizes to exactly [1, 0] range
+  // True exponential decay normalized to [1, 0]
   const expK = Math.exp(-k);
   return (Math.exp(-phase * k) - expK) / (1 - expK);
 }
 
 /**
  * Ramp waveform - Unipolar (0 to +1)
- * Linear rise from 0 to +1
+ * Linear rise from 0 to +1 (matches Digitakt II behavior)
  */
 export function generateRamp(phase: number): number {
   return phase;
@@ -141,9 +138,10 @@ export function generateWaveform(
 
 /**
  * Check if a waveform is unipolar (0 to +1) vs bipolar (-1 to +1)
+ * RMP and EXP are unipolar - depth parameter handles negative modulation
  */
 export function isUnipolar(waveform: Waveform): boolean {
-  return waveform === 'EXP' || waveform === 'RMP';
+  return waveform === 'RMP' || waveform === 'EXP';
 }
 
 /**

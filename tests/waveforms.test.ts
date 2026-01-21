@@ -123,22 +123,22 @@ describe('Square Waveform', () => {
 });
 
 describe('Sawtooth Waveform', () => {
-  test('starts at +1 at phase 0', () => {
-    expect(generateSawtooth(0)).toBe(1);
+  test('starts at -1 at phase 0', () => {
+    expect(generateSawtooth(0)).toBe(-1);
   });
 
   test('is 0 at phase 0.5', () => {
     expect(generateSawtooth(0.5)).toBe(0);
   });
 
-  test('approaches -1 at phase ~1', () => {
-    expect(generateSawtooth(1)).toBe(-1);
-    expect(generateSawtooth(0.999)).toBeCloseTo(-1, 2);
+  test('approaches +1 at phase ~1', () => {
+    expect(generateSawtooth(1)).toBe(1);
+    expect(generateSawtooth(0.999)).toBeCloseTo(1, 2);
   });
 
-  test('is bipolar and linear (falling)', () => {
-    expect(generateSawtooth(0.25)).toBeCloseTo(0.5, 5);
-    expect(generateSawtooth(0.75)).toBeCloseTo(-0.5, 5);
+  test('is bipolar and linear (rising)', () => {
+    expect(generateSawtooth(0.25)).toBeCloseTo(-0.5, 5);
+    expect(generateSawtooth(0.75)).toBeCloseTo(0.5, 5);
   });
 });
 

@@ -66,7 +66,7 @@ function generateSquare(phase) {
   return phase < 0.5 ? 1 : -1;
 }
 function generateSawtooth(phase) {
-  return 1 - phase * 2;
+  return phase * 2 - 1;
 }
 function generateExponential(phase) {
   const k = 3;
@@ -122,7 +122,7 @@ function generateWaveform(waveform, phase, state) {
   }
 }
 function isUnipolar(waveform) {
-  return waveform === "EXP" || waveform === "RMP";
+  return waveform === "RMP" || waveform === "EXP";
 }
 function getWaveformRange(waveform) {
   if (isUnipolar(waveform)) {
@@ -523,6 +523,9 @@ class LFO {
   }
   stop() {
     this.state.isRunning = false;
+  }
+  resetTiming() {
+    this.lastUpdateTime = 0;
   }
 }
 export {
