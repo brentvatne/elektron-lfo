@@ -103,11 +103,12 @@ describe('calculatePhaseIncrement', () => {
     expect(increment).toBeCloseTo(1 / 2000, 8);
   });
 
-  test('calculates negative increment for negative speed', () => {
-    const config = createConfig({ speed: -16, multiplier: 8 }); // 2000ms cycle, backward
+  test('calculates positive increment for negative speed (phase always forward)', () => {
+    const config = createConfig({ speed: -16, multiplier: 8 }); // 2000ms cycle
     const increment = calculatePhaseIncrement(config, 120);
-    expect(increment).toBeLessThan(0);
-    expect(increment).toBeCloseTo(-1 / 2000, 8);
+    // Phase always moves forward; output inversion is handled in LFO class
+    expect(increment).toBeGreaterThan(0);
+    expect(increment).toBeCloseTo(1 / 2000, 8);
   });
 
   test('returns 0 for speed 0', () => {

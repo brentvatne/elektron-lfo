@@ -23,11 +23,11 @@ describe('Phase wrapping', () => {
     expect(wrappedFromOne).toBe(true);
   });
 
-  test('phase wraps from 0 to 1 (backward/negative speed)', () => {
-    const lfo = new LFO({ speed: -32, multiplier: 64 }, 120); // Fast backward cycle
+  test('phase wraps from 1 to 0 (negative speed - phase still runs forward)', () => {
+    const lfo = new LFO({ speed: -32, multiplier: 64 }, 120); // Fast cycle, negative speed
 
     let lastTime = 0;
-    let wrappedToOne = false;
+    let wrappedFromOne = false;
     let previousPhase = 0;
 
     // First update to initialize
@@ -36,15 +36,16 @@ describe('Phase wrapping', () => {
 
     for (let i = 0; i < 200; i++) {
       const state = lfo.update(lastTime);
-      if (previousPhase < 0.1 && state.phase > 0.9) {
-        wrappedToOne = true;
+      // Phase still runs forward even with negative speed
+      if (previousPhase > 0.9 && state.phase < 0.1) {
+        wrappedFromOne = true;
         break;
       }
       previousPhase = state.phase;
       lastTime += 10;
     }
 
-    expect(wrappedToOne).toBe(true);
+    expect(wrappedFromOne).toBe(true);
   });
 
   test('phase stays within 0-1 range', () => {
@@ -61,16 +62,23 @@ describe('Phase wrapping', () => {
 });
 
 describe('Negative speed', () => {
-  test('negative speed runs phase backwards', () => {
-    const lfo = new LFO({ speed: -16, multiplier: 8, startPhase: 64 }, 120);
+  test('negative speed inverts output (phase still runs forward)', () => {
+    // Positive speed LFO
+    const lfoPos = new LFO({ speed: 16, multiplier: 8, waveform: 'TRI' }, 120);
+    // Negative speed LFO (same magnitude)
+    const lfoNeg = new LFO({ speed: -16, multiplier: 8, waveform: 'TRI' }, 120);
 
-    // Initialize
-    lfo.update(0);
-    const state1 = lfo.update(100);
-    const state2 = lfo.update(200);
+    // Initialize both
+    lfoPos.update(0);
+    lfoNeg.update(0);
 
-    // Phase should decrease
-    expect(state2.phase).toBeLessThan(state1.phase);
+    const statePos = lfoPos.update(500);
+    const stateNeg = lfoNeg.update(500);
+
+    // Phase should be the same (both run forward)
+    expect(stateNeg.phase).toBeCloseTo(statePos.phase, 4);
+    // Output should be inverted
+    expect(stateNeg.output).toBeCloseTo(-statePos.output, 4);
   });
 
   test('positive speed runs phase forwards', () => {

@@ -69,8 +69,9 @@ function generateSawtooth(phase) {
   return 1 - phase * 2;
 }
 function generateExponential(phase) {
-  const k = 4;
-  return Math.exp(-phase * k);
+  const k = 3;
+  const expK = Math.exp(-k);
+  return (Math.exp(-phase * k) - expK) / (1 - expK);
 }
 function generateRamp(phase) {
   return phase;
@@ -154,8 +155,7 @@ function calculatePhaseIncrement(config, bpm) {
   if (cycleTimeMs === Infinity || cycleTimeMs === 0) {
     return 0;
   }
-  const direction = config.speed >= 0 ? 1 : -1;
-  return direction / cycleTimeMs;
+  return 1 / cycleTimeMs;
 }
 function calculateCyclesPerBar(config) {
   const product = calculateProduct(config);
@@ -345,7 +345,7 @@ function calculateFadeMultiplier(fadeValue, fadeProgress) {
 function calculateFadeCycles(fadeValue) {
   if (fadeValue === 0)
     return 0;
-  return Math.abs(fadeValue) / 64;
+  return 128 / Math.abs(fadeValue);
 }
 function updateFade(config, state, cycleTimeMs, deltaMs) {
   if (config.fade === 0 || config.mode === "FRE") {
@@ -452,17 +452,29 @@ class LFO {
     if (this.config.mode === "HLD" && this.state.triggerCount > 0) {
       effectiveRawOutput = this.state.heldOutput;
     }
+    if (this.config.speed < 0) {
+      effectiveRawOutput = -effectiveRawOutput;
+    }
     const depthScale = this.config.depth / 63;
     let scaledOutput = effectiveRawOutput * depthScale;
-    if (isUnipolar(this.config.waveform)) {
-      scaledOutput *= 2;
-    }
     scaledOutput *= this.state.fadeMultiplier;
+    if (isUnipolar(this.config.waveform)) {}
     this.state.output = scaledOutput;
     return { ...this.state };
   }
   trigger() {
-    this.state = handleTrigger(this.config, this.state, this.state.rawOutput);
+    let rawOutputForTrigger = this.state.rawOutput;
+    if (this.config.mode === "HLD") {
+      const waveformResult = generateWaveform(this.config.waveform, this.state.phase, this.state);
+      rawOutputForTrigger = waveformResult.value;
+      if (waveformResult.newRandomValue !== undefined) {
+        this.state.randomValue = waveformResult.newRandomValue;
+      }
+      if (waveformResult.newRandomStep !== undefined) {
+        this.state.randomStep = waveformResult.newRandomStep;
+      }
+    }
+    this.state = handleTrigger(this.config, this.state, rawOutputForTrigger);
   }
   getState() {
     return { ...this.state };
@@ -511,9 +523,6 @@ class LFO {
   }
   stop() {
     this.state.isRunning = false;
-  }
-  resetTiming() {
-    this.lastUpdateTime = 0;
   }
 }
 export {

@@ -62,9 +62,8 @@ export function calculatePhaseIncrement(config: LFOConfig, bpm: number): number 
     return 0;
   }
 
-  // Negative speed runs phase backwards
-  const direction = config.speed >= 0 ? 1 : -1;
-  return direction / cycleTimeMs;
+  // Phase always moves forward; negative speed is handled by inverting waveform output
+  return 1 / cycleTimeMs;
 }
 
 /**

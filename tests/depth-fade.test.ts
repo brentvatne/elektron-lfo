@@ -133,11 +133,16 @@ describe('calculateFadeCycles', () => {
     expect(calculateFadeCycles(0)).toBe(0);
   });
 
-  test('calculates cycles based on fade value', () => {
-    expect(calculateFadeCycles(64)).toBe(1); // Full fade = 1 cycle
-    expect(calculateFadeCycles(-64)).toBe(1);
-    expect(calculateFadeCycles(32)).toBe(0.5); // Half fade = 0.5 cycle
-    expect(calculateFadeCycles(-32)).toBe(0.5);
+  test('calculates cycles based on fade value (128/|FADE|)', () => {
+    // Higher |FADE| = faster fade (fewer cycles)
+    expect(calculateFadeCycles(64)).toBe(2);   // 128/64 = 2 cycles
+    expect(calculateFadeCycles(-64)).toBe(2);
+    expect(calculateFadeCycles(32)).toBe(4);   // 128/32 = 4 cycles
+    expect(calculateFadeCycles(-32)).toBe(4);
+    expect(calculateFadeCycles(16)).toBe(8);   // 128/16 = 8 cycles
+    expect(calculateFadeCycles(-16)).toBe(8);
+    expect(calculateFadeCycles(1)).toBe(128);  // 128/1 = 128 cycles (slowest)
+    expect(calculateFadeCycles(-1)).toBe(128);
   });
 });
 
@@ -161,13 +166,16 @@ describe('updateFade', () => {
   });
 
   test('progresses fade over time', () => {
-    const config = createConfig({ fade: -64, mode: 'TRG' }); // 1 cycle fade
+    // fade=-64 takes 128/64 = 2 cycles
+    const config = createConfig({ fade: -64, mode: 'TRG' });
     const state = createState({ fadeProgress: 0 });
+    const cycleTimeMs = 2000;
 
-    // After half the cycle time, progress should be ~0.5
-    const result = updateFade(config, state, 2000, 1000);
-    expect(result.fadeProgress).toBeCloseTo(0.5, 1);
-    expect(result.fadeMultiplier).toBeCloseTo(0.5, 1);
+    // Fade duration = 2 cycles * 2000ms = 4000ms
+    // After 1000ms (1/4 of fade), progress should be ~0.25
+    const result = updateFade(config, state, cycleTimeMs, 1000);
+    expect(result.fadeProgress).toBeCloseTo(0.25, 1);
+    expect(result.fadeMultiplier).toBeCloseTo(0.25, 1);
   });
 });
 
@@ -221,7 +229,7 @@ describe('Fade with LFO integration', () => {
     const lfo = new LFO({
       waveform: 'SIN',
       depth: 63,
-      fade: -64, // Fade in over 1 cycle
+      fade: -64, // Fade in over 2 cycles (128/64)
       mode: 'TRG',
     }, 120);
 
@@ -231,9 +239,10 @@ describe('Fade with LFO integration', () => {
     const state1 = lfo.update(100);
     expect(Math.abs(state1.output)).toBeLessThan(0.1); // Start near 0
 
-    // After more time, output should increase
+    // Fade takes 2 cycles = 4000ms at 2000ms/cycle
+    // After more time, output should increase significantly
     let maxOutput = 0;
-    for (let t = 100; t < 2500; t += 100) {
+    for (let t = 100; t < 5000; t += 100) {
       const state = lfo.update(t);
       maxOutput = Math.max(maxOutput, Math.abs(state.output));
     }
@@ -244,7 +253,7 @@ describe('Fade with LFO integration', () => {
     const lfo = new LFO({
       waveform: 'SIN',
       depth: 63,
-      fade: 64, // Fade out over 1 cycle
+      fade: 64, // Fade out over 2 cycles (128/64)
       mode: 'TRG',
       startPhase: 32, // Start at peak
     }, 120);
@@ -256,9 +265,10 @@ describe('Fade with LFO integration', () => {
     // Should start near full output (at SIN peak)
     expect(Math.abs(state1.output)).toBeGreaterThan(0.8);
 
+    // Fade takes 2 cycles = 4000ms at 2000ms/cycle
     // After fade completes, output should be near 0
     let lastOutput = 0;
-    for (let t = 10; t < 3000; t += 100) {
+    for (let t = 10; t < 5000; t += 100) {
       const state = lfo.update(t);
       lastOutput = Math.abs(state.output);
     }

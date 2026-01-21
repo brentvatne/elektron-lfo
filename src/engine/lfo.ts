@@ -134,6 +134,11 @@ export class LFO {
       effectiveRawOutput = this.state.heldOutput;
     }
 
+    // Invert output for negative speed (phase still runs forward)
+    if (this.config.speed < 0) {
+      effectiveRawOutput = -effectiveRawOutput;
+    }
+
     // Apply depth
     // Depth scales the output: depth of 63 = 100%, depth of 0 = 0%
     // Negative depth inverts the waveform
@@ -157,9 +162,32 @@ export class LFO {
 
   /**
    * Trigger the LFO
+   *
+   * For HLD mode, this computes the current waveform value at the current phase
+   * to ensure the held value is accurate, even if trigger() is called before
+   * any update() calls.
    */
   trigger(): void {
-    this.state = handleTrigger(this.config, this.state, this.state.rawOutput);
+    // For HLD mode, compute fresh waveform output at current phase.
+    // This is necessary because rawOutput may be stale if trigger() is called
+    // before update() has been called (e.g., when initializing an HLD mode LFO).
+    let rawOutputForTrigger = this.state.rawOutput;
+    if (this.config.mode === 'HLD') {
+      const waveformResult = generateWaveform(
+        this.config.waveform,
+        this.state.phase,
+        this.state
+      );
+      rawOutputForTrigger = waveformResult.value;
+      // Update random state if needed (for RND waveform)
+      if (waveformResult.newRandomValue !== undefined) {
+        this.state.randomValue = waveformResult.newRandomValue;
+      }
+      if (waveformResult.newRandomStep !== undefined) {
+        this.state.randomStep = waveformResult.newRandomStep;
+      }
+    }
+    this.state = handleTrigger(this.config, this.state, rawOutputForTrigger);
   }
 
   /**

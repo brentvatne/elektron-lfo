@@ -48,16 +48,21 @@ export function calculateFadeMultiplier(
  * Calculate fade cycles - how many LFO cycles for complete fade
  *
  * The FADE parameter (-64 to +63) maps to fade duration in cycles:
- * - |FADE| / 64 gives the number of cycles (approximately)
- * - At |FADE| = 64, fade takes 1 cycle
- * - At |FADE| = 32, fade takes 0.5 cycles
- * - At |FADE| = 1, fade takes ~1/64 of a cycle
+ * - 128 / |FADE| gives the number of cycles
+ * - At |FADE| = 64, fade takes 2 cycles
+ * - At |FADE| = 32, fade takes 4 cycles
+ * - At |FADE| = 16, fade takes 8 cycles
+ * - At |FADE| = 1, fade takes 128 cycles
+ *
+ * This follows the same "128" convention used in LFO timing calculations,
+ * where 128 is the crossover point for bar-length cycles.
+ * Higher |FADE| values = faster fade, lower |FADE| values = slower fade.
  */
 export function calculateFadeCycles(fadeValue: number): number {
   if (fadeValue === 0) return 0;
-  // Map |FADE| to cycles: |FADE| / 64 cycles
-  // Maximum fade (64) = 1 cycle, minimum (1) = 1/64 cycle
-  return Math.abs(fadeValue) / 64;
+  // Map |FADE| to cycles: 128 / |FADE| cycles
+  // Maximum fade (64) = 2 cycles, minimum (1) = 128 cycles
+  return 128 / Math.abs(fadeValue);
 }
 
 /**

@@ -62,17 +62,17 @@ describe('Preset 1: Fade-In One-Shot', () => {
     lfo.update(0);
 
     const state1 = lfo.update(100);
-    expect(state1.fadeMultiplier).toBeLessThan(0.5);
+    expect(state1.fadeMultiplier).toBeLessThan(0.2);
 
-    // Fade -32 = 0.5 cycles = 1000ms at 2000ms cycle
-    // After ~500ms, should be about halfway
-    let midFadeMultiplier = 0;
-    for (let t = 100; t < 600; t += 50) {
+    // Fade -32 = 128/32 = 4 cycles = 8000ms at 2000ms cycle
+    // After ~2000ms (1 cycle), should be at 25% (2000/8000)
+    let laterFadeMultiplier = 0;
+    for (let t = 100; t < 2100; t += 50) {
       const state = lfo.update(t);
-      midFadeMultiplier = state.fadeMultiplier;
+      laterFadeMultiplier = state.fadeMultiplier;
     }
-    expect(midFadeMultiplier).toBeGreaterThan(0.3);
-    expect(midFadeMultiplier).toBeLessThan(0.8);
+    expect(laterFadeMultiplier).toBeGreaterThan(0.15);
+    expect(laterFadeMultiplier).toBeLessThan(0.4);
   });
 });
 
