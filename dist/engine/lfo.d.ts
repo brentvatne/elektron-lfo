@@ -73,4 +73,11 @@ export declare class LFO {
      * Stop the LFO
      */
     stop(): void;
+    /**
+     * Reset timing so the next update() call has deltaMs = 0
+     *
+     * Call this after trigger() when restarting from a paused state
+     * to prevent the LFO from jumping ahead by the paused duration.
+     */
+    resetTiming(): void;
 }

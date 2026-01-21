@@ -70,7 +70,7 @@ function generateSawtooth(phase) {
 }
 function generateExponential(phase) {
   const k = 4;
-  return (Math.exp(phase * k) - 1) / (Math.exp(k) - 1);
+  return Math.exp(-phase * k);
 }
 function generateRamp(phase) {
   return phase;
@@ -454,8 +454,10 @@ class LFO {
     }
     const depthScale = this.config.depth / 63;
     let scaledOutput = effectiveRawOutput * depthScale;
+    if (isUnipolar(this.config.waveform)) {
+      scaledOutput *= 2;
+    }
     scaledOutput *= this.state.fadeMultiplier;
-    if (isUnipolar(this.config.waveform)) {}
     this.state.output = scaledOutput;
     return { ...this.state };
   }
@@ -509,6 +511,9 @@ class LFO {
   }
   stop() {
     this.state.isRunning = false;
+  }
+  resetTiming() {
+    this.lastUpdateTime = 0;
   }
 }
 export {

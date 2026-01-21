@@ -23,7 +23,7 @@ export declare function generateSine(phase: number): number;
 export declare function generateSquare(phase: number): number;
 /**
  * Sawtooth waveform - Bipolar
- * Linear rise from -1 to +1
+ * Linear fall from +1 to -1 (with positive depth)
  */
 export declare function generateSawtooth(phase: number): number;
 /**
@@ -33,7 +33,7 @@ export declare function generateSawtooth(phase: number): number;
 export declare function generateExponential(phase: number): number;
 /**
  * Ramp waveform - Unipolar (0 to +1)
- * Linear fall from +1 to 0
+ * Linear rise from 0 to +1
  */
 export declare function generateRamp(phase: number): number;
 /**
