@@ -143,12 +143,13 @@ describe('Sawtooth Waveform', () => {
 });
 
 describe('Exponential Waveform', () => {
-  test('starts at 0 at phase 0', () => {
-    expect(generateExponential(0)).toBeCloseTo(0, 5);
+  test('starts at 1 at phase 0 (peak, matching Digitakt II)', () => {
+    expect(generateExponential(0)).toBeCloseTo(1, 5);
   });
 
-  test('ends at 1 at phase 1', () => {
-    expect(generateExponential(1)).toBeCloseTo(1, 5);
+  test('decays toward 0 at phase 1', () => {
+    // Exponential decay: e^(-4) ≈ 0.018
+    expect(generateExponential(1)).toBeCloseTo(0.018, 2);
   });
 
   test('is unipolar (0 to +1)', () => {
@@ -157,9 +158,10 @@ describe('Exponential Waveform', () => {
     expect(Math.max(...samples)).toBeLessThanOrEqual(1);
   });
 
-  test('has accelerating (exponential) curve shape', () => {
-    // At phase 0.5, should be less than 0.5 (curve bends up)
+  test('has decaying (exponential decay) curve shape', () => {
+    // At phase 0.5, should be greater than 0.5 (decay curve starts high)
     const midValue = generateExponential(0.5);
+    expect(midValue).toBeGreaterThan(0.1);
     expect(midValue).toBeLessThan(0.5);
   });
 });
@@ -237,7 +239,7 @@ describe('generateWaveform', () => {
     expect(generateWaveform('SIN', 0.25, state).value).toBeCloseTo(1, 5);
     expect(generateWaveform('SQR', 0.25, state).value).toBe(1);
     expect(generateWaveform('SAW', 0.5, state).value).toBe(0);
-    expect(generateWaveform('EXP', 1, state).value).toBeCloseTo(1, 5);
+    expect(generateWaveform('EXP', 0, state).value).toBeCloseTo(1, 5); // EXP starts at peak
     expect(generateWaveform('RMP', 0, state).value).toBe(0);
   });
 });
