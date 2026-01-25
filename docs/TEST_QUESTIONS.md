@@ -591,6 +591,13 @@ Exponential region (|FADE| > 16): cycles = 2.2 * 2^((|FADE| - 16) / 4.5)
 - Higher |FADE| = SLOWER fade (more cycles to complete)
 - NO "disabled" threshold - even |FADE|=63 fades, just very slowly (~3000 cycles)
 - Fade does NOT work in FRE mode (requires trigger to initiate)
+- Fade-out: Cycle 1 has full amplitude; fade effect starts from cycle 2
+- Each trigger resets fade progress to 0
+
+**Formula validated at extremes (60-second tests):**
+- FADE=-48 (304 cycles to complete): observed 20% progress ✓
+- FADE=-56 (1043 cycles): observed 6% progress ✓
+- FADE=-63 (3066 cycles): observed 2% progress ✓
 
 **Measured values:**
 | FADE | Cycles |
