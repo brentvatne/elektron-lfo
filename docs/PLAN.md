@@ -421,15 +421,15 @@ types.ts
 
 2. **Random waveform state** needs special handling - must track previous phase to detect step changes.
 
-3. **ONE mode stopping** requires careful detection of phase wrapping past the start phase. Must work for both positive AND negative speed.
+3. **ONE mode stopping** occurs immediately when phase wraps (cycleCount >= 1), NOT when returning to start phase. This was verified against Digitakt II hardware - non-zero startPhase results in partial amplitude coverage.
 
 4. **HLF mode** stops at the phase 0.5 beyond start phase (wrapping), not absolute 0.5.
 
-5. **HLD mode** captures the current output when triggered and holds it until the next trigger, but the LFO continues running in the background.
+5. **HLD mode** captures the current output when triggered and holds it until the next trigger. The LFO continues running in background. Note: Digitakt hardware only sends MIDI CC when the held value CHANGES between triggers - if multiple triggers capture the same value, only one CC is sent.
 
-6. **Fade timing** is relative to LFO cycles, not absolute time. This ensures consistency across BPM changes.
+6. **Fade timing** is relative to LFO cycles, not absolute time. Hardware-verified formula: Linear region (|FADE| ≤ 16): `cycles = 0.1 * |FADE| + 0.6`; Exponential region (|FADE| > 16): `cycles = 2.2 * 2^((|FADE| - 16) / 4.5)`. Higher |FADE| = slower fade.
 
-7. **Fade resets** on trigger for TRG, ONE, and HLF modes. FRE mode does not reset fade.
+7. **Fade resets** on trigger for TRG, ONE, and HLF modes. FRE mode does not reset fade, and importantly, fade does NOT work in FRE mode at all (requires a trigger to initiate).
 
 8. **60fps update rate** is sufficient for visualization but may need adjustment for audio-rate LFO applications.
 

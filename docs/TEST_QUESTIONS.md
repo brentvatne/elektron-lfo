@@ -541,6 +541,72 @@ Use this checklist to track test completion:
 
 ---
 
+## Hardware-Verified Findings (January 2026)
+
+The following behaviors were verified against real Digitakt II hardware via MIDI CC monitoring.
+
+### ONE Mode Stop Behavior
+
+**Finding:** ONE mode stops immediately when phase wraps (cycleCount >= 1), NOT when phase returns to startPhase.
+
+**Implications:**
+- Non-zero startPhase results in partial amplitude coverage before wrap
+- Phase=0: full waveform traversed before wrap
+- Phase=32 (90°): full amplitude range (peak to trough)
+- Phase=64 (180°): half amplitude range (starts at middle)
+- Phase=96 (270°): half amplitude range (starts at trough)
+
+**Test Updates:** TEST 2 and TEST 17 expected results should be revised - the LFO stops on phase wrap, not when returning to start phase.
+
+### HLD Mode MIDI Behavior
+
+**Finding:** The Digitakt only sends MIDI CC messages when the held value CHANGES between triggers.
+
+**Behavior:**
+- LFO continues running in background between triggers
+- Each trigger captures and holds the current LFO value
+- If multiple triggers capture the same value, only one CC is sent
+- Verification: expect ≤N unique CC values for N triggers, all within valid range
+
+**Test Updates:** TEST 5 verification should account for this - you may receive fewer CCs than triggers if values repeat.
+
+### HLF Mode (Half Cycle)
+
+**Finding:** HLF runs for exactly 0.5 phase distance then stops.
+
+**Verification:**
+- For TRI with startPhase=0: goes from middle to peak only = 50% amplitude range
+- Correctly outputs half the expected full-cycle range
+
+### Fade Formula (Empirical)
+
+**Finding:** The fade envelope follows a piecewise formula:
+
+```
+Linear region (|FADE| ≤ 16):   cycles = 0.1 * |FADE| + 0.6
+Exponential region (|FADE| > 16): cycles = 2.2 * 2^((|FADE| - 16) / 4.5)
+```
+
+**Key observations:**
+- Higher |FADE| = SLOWER fade (more cycles to complete)
+- NO "disabled" threshold - even |FADE|=63 fades, just very slowly (~3000 cycles)
+- Fade does NOT work in FRE mode (requires trigger to initiate)
+
+**Measured values:**
+| FADE | Cycles |
+|------|--------|
+| 4    | ~1     |
+| 8    | ~1.4   |
+| 16   | ~2.2   |
+| 24   | ~7.5   |
+| 32   | ~26    |
+| 48   | ~300   |
+| 63   | ~3000  |
+
+**Test Updates:** TEST 8 and TEST 12 expected results should use this formula for accurate predictions.
+
+---
+
 ## Document Metadata
 
 - **Created:** Based on DIGITAKT_II_LFO_SPEC.md and DIGITAKT_II_LFO_PRESETS.md
