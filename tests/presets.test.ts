@@ -49,12 +49,13 @@ describe('Preset 1: Fade-In One-Shot', () => {
   });
 
   test('fade multiplier increases over time (fade in)', () => {
+    // Use TRG mode instead of ONE so LFO keeps running for fade to progress
     const lfo = new LFO({
       waveform: 'RMP',
       speed: 8,
-      multiplier: 16,
-      mode: 'ONE',
-      fade: -32, // Negative = fade IN
+      multiplier: 8,  // product=64, cycle=4000ms
+      mode: 'TRG',
+      fade: -16, // Fast fade-in (~2.67 cycles)
       depth: 63,
     }, 120);
 
@@ -62,17 +63,19 @@ describe('Preset 1: Fade-In One-Shot', () => {
     lfo.update(0);
 
     const state1 = lfo.update(100);
-    expect(state1.fadeMultiplier).toBeLessThan(0.2);
+    expect(state1.fadeMultiplier).toBeLessThan(0.1);
 
-    // Fade -32 = 128/32 = 4 cycles = 8000ms at 2000ms cycle
-    // After ~2000ms (1 cycle), should be at 25% (2000/8000)
+    // Fade -16 = ~2.67 cycles (new formula)
+    // With speed=8, mult=8, product=64, cycle time = 4000ms at 120 BPM
+    // Total fade duration = ~2.67 * 4000ms = ~10680ms
+    // After ~8000ms (2 cycles), should be at ~75%
     let laterFadeMultiplier = 0;
-    for (let t = 100; t < 2100; t += 50) {
+    for (let t = 100; t < 8100; t += 100) {
       const state = lfo.update(t);
       laterFadeMultiplier = state.fadeMultiplier;
     }
-    expect(laterFadeMultiplier).toBeGreaterThan(0.15);
-    expect(laterFadeMultiplier).toBeLessThan(0.4);
+    expect(laterFadeMultiplier).toBeGreaterThan(0.6);
+    expect(laterFadeMultiplier).toBeLessThan(0.9);
   });
 });
 

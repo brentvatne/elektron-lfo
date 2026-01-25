@@ -241,62 +241,40 @@ describe('checkModeStop - ONE mode', () => {
     expect(result.shouldStop).toBe(true);
   });
 
-  test('with non-zero startPhase, does NOT stop immediately after wrap - must reach startPhase', () => {
-    // Bug fix: With startPhase 53 (~0.414), the LFO should:
-    // 1. Start at 0.414
-    // 2. Run to 1.0, wrap to 0.0 (cycleCount = 1)
-    // 3. Continue from 0.0 to 0.414 (startPhase)
-    // 4. THEN stop
+  test('with non-zero startPhase, stops immediately on wrap (Digitakt II verified)', () => {
+    // Hardware verified (January 2025): ONE mode stops immediately when phase wraps,
+    // regardless of startPhase. It does NOT continue back to startPhase.
+    // This means non-zero startPhase results in partial amplitude coverage:
+    //   - Phase=64 (0.5): only covers half the waveform amplitude
+    //   - Phase=96 (0.75): only covers quarter of phase distance
     const config = createConfig({ mode: 'ONE', speed: 16, startPhase: 53 });
     const startPhaseNormalized = 53 / 128; // ~0.414
 
-    // After wrap, phase is 0.1, which is BEFORE startPhase (0.414)
-    // Should NOT stop yet
+    // After wrap, cycleCount = 1, should stop IMMEDIATELY
     const stateAfterWrap = createState({
       hasTriggered: true,
       startPhaseNormalized,
       cycleCount: 1,
     });
-    const resultBeforeStart = checkModeStop(config, stateAfterWrap, 0.05, 0.1);
-    expect(resultBeforeStart.shouldStop).toBe(false);
-
-    // Phase reaches 0.3, still before startPhase - should NOT stop
-    const resultStillBefore = checkModeStop(config, stateAfterWrap, 0.2, 0.3);
-    expect(resultStillBefore.shouldStop).toBe(false);
-
-    // Phase crosses startPhase (0.414) - NOW should stop
-    const resultAtStart = checkModeStop(config, stateAfterWrap, 0.4, 0.45);
-    expect(resultAtStart.shouldStop).toBe(true);
-    expect(resultAtStart.cycleCompleted).toBe(true);
+    const resultAfterWrap = checkModeStop(config, stateAfterWrap, 0.05, 0.1);
+    expect(resultAfterWrap.shouldStop).toBe(true);
+    expect(resultAfterWrap.cycleCompleted).toBe(true);
   });
 
-  test('with non-zero startPhase (backward), continues after wrap until reaching startPhase', () => {
-    // Backward direction with startPhase 53 (~0.414):
-    // 1. Start at 0.414
-    // 2. Run backward to 0.0, wrap to 1.0 (cycleCount = 1)
-    // 3. Continue from 1.0 down to 0.414
-    // 4. THEN stop
+  test('with non-zero startPhase (backward), stops immediately on wrap (Digitakt II verified)', () => {
+    // Hardware verified: backward direction also stops immediately on wrap
     const config = createConfig({ mode: 'ONE', speed: -16, startPhase: 53 });
     const startPhaseNormalized = 53 / 128; // ~0.414
 
-    // After wrap going backward, phase is 0.9, which is ABOVE startPhase (0.414)
-    // Should NOT stop yet
+    // After wrap going backward, cycleCount = 1, should stop IMMEDIATELY
     const stateAfterWrap = createState({
       hasTriggered: true,
       startPhaseNormalized,
       cycleCount: 1,
     });
     const resultAfterWrap = checkModeStop(config, stateAfterWrap, 0.95, 0.9);
-    expect(resultAfterWrap.shouldStop).toBe(false);
-
-    // Phase reaches 0.5, still above startPhase - should NOT stop
-    const resultStillAbove = checkModeStop(config, stateAfterWrap, 0.6, 0.5);
-    expect(resultStillAbove.shouldStop).toBe(false);
-
-    // Phase crosses startPhase (0.414) going down - NOW should stop
-    const resultAtStart = checkModeStop(config, stateAfterWrap, 0.45, 0.4);
-    expect(resultAtStart.shouldStop).toBe(true);
-    expect(resultAtStart.cycleCompleted).toBe(true);
+    expect(resultAfterWrap.shouldStop).toBe(true);
+    expect(resultAfterWrap.cycleCompleted).toBe(true);
   });
 });
 

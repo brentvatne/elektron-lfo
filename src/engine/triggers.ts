@@ -112,23 +112,17 @@ export function checkModeStop(
   const isForward = config.speed >= 0;
 
   if (config.mode === 'ONE') {
-    // ONE mode: Stop after completing one full cycle back to startPhase
-    // For non-zero startPhase, we need to:
-    // 1. Wait for phase to wrap (cycleCount >= 1)
-    // 2. Then continue until we reach/pass the startPhase again
+    // ONE mode: Stop immediately when phase completes one wrap (cycleCount >= 1)
+    // Based on Digitakt II hardware testing (January 2025):
+    // - Phase runs from startPhase until it wraps (crosses 1.0→0.0 or 0.0→1.0)
+    // - Stops immediately on wrap, does NOT continue back to startPhase
+    // - This means non-zero startPhase values result in partial amplitude coverage:
+    //   - Phase=0: full amplitude range (0→1→0, complete waveform)
+    //   - Phase=32: full amplitude range (0.25→1→0, starts at peak)
+    //   - Phase=64: half amplitude range (0.5→1→0, starts at middle)
+    //   - Phase=96: half amplitude range (0.75→1→0, starts at trough)
     if (state.cycleCount >= 1) {
-      if (isForward) {
-        // Forward: stop when current phase reaches or passes startPhase after wrapping
-        // Handle the case where startPhase is 0 (stop immediately on wrap)
-        if (startPhase === 0 || currentPhase >= startPhase) {
-          return { shouldStop: true, cycleCompleted: true };
-        }
-      } else {
-        // Backward: stop when current phase reaches or goes below startPhase after wrapping
-        if (startPhase === 0 || currentPhase <= startPhase) {
-          return { shouldStop: true, cycleCompleted: true };
-        }
-      }
+      return { shouldStop: true, cycleCompleted: true };
     }
   } else if (config.mode === 'HLF') {
     // HLF mode: Stop after half cycle (0.5 phase distance from start)

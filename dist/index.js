@@ -283,15 +283,7 @@ function checkModeStop(config, state, previousPhase, currentPhase) {
   const isForward = config.speed >= 0;
   if (config.mode === "ONE") {
     if (state.cycleCount >= 1) {
-      if (isForward) {
-        if (startPhase === 0 || currentPhase >= startPhase) {
-          return { shouldStop: true, cycleCompleted: true };
-        }
-      } else {
-        if (startPhase === 0 || currentPhase <= startPhase) {
-          return { shouldStop: true, cycleCompleted: true };
-        }
-      }
+      return { shouldStop: true, cycleCompleted: true };
     }
   } else if (config.mode === "HLF") {
     const halfPhase = (startPhase + 0.5) % 1;
@@ -345,7 +337,12 @@ function calculateFadeMultiplier(fadeValue, fadeProgress) {
 function calculateFadeCycles(fadeValue) {
   if (fadeValue === 0)
     return 0;
-  return 128 / Math.abs(fadeValue);
+  const absFade = Math.abs(fadeValue);
+  if (absFade <= 16) {
+    return Math.max(0.5, 0.1 * absFade + 0.6);
+  }
+  const baseAt16 = 2.2;
+  return baseAt16 * Math.pow(2, (absFade - 16) / 4.5);
 }
 function updateFade(config, state, cycleTimeMs, deltaMs) {
   if (config.fade === 0 || config.mode === "FRE") {
@@ -356,7 +353,7 @@ function updateFade(config, state, cycleTimeMs, deltaMs) {
   }
   const fadeCycles = calculateFadeCycles(config.fade);
   const fadeDurationMs = fadeCycles * cycleTimeMs;
-  if (fadeDurationMs === 0 || fadeDurationMs === Infinity) {
+  if (fadeDurationMs === 0) {
     return {
       fadeProgress: 1,
       fadeMultiplier: config.fade < 0 ? 0 : 1
