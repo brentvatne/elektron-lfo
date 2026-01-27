@@ -161,7 +161,10 @@ describe('Negative Speed - RMP waveform (unipolar)', () => {
     expect(stateMid.rawOutput).toBeCloseTo(0.5, 1);
   });
 
-  test('negative speed RMP has inverted output (0 to -1)', () => {
+  test('negative speed RMP has flipped output (1 to 0) - Digitakt II verified', () => {
+    // Hardware behavior: negative speed flips unipolar waveforms
+    // RMP normally: 0→1 (ramp up)
+    // RMP speed-: 1→0 (ramp down) via 1-x transformation
     const lfo = new LFO({
       waveform: 'RMP',
       speed: -16,
@@ -173,15 +176,15 @@ describe('Negative Speed - RMP waveform (unipolar)', () => {
     lfo.update(0);
     const stateStart = lfo.update(1);
 
-    // rawOutput is still 0 (RMP at phase 0), output is negated to 0
+    // rawOutput is still 0 (RMP at phase 0), but output is flipped: 1-0=1
     expect(stateStart.rawOutput).toBeCloseTo(0, 1);
-    expect(stateStart.output).toBeCloseTo(0, 1); // -0 = 0
+    expect(stateStart.output).toBeCloseTo(1, 1); // Flipped to 1
 
-    // After half cycle, rawOutput is 0.5, output is -0.5 * depth
+    // After half cycle, rawOutput is 0.5, flipped to 0.5
     const cycleMs = lfo.getTimingInfo().cycleTimeMs;
     const stateMid = lfo.update(cycleMs * 0.5);
     expect(stateMid.rawOutput).toBeCloseTo(0.5, 1);
-    expect(stateMid.output).toBeLessThan(0); // Negated
+    expect(stateMid.output).toBeCloseTo(0.5, 1); // 1-0.5=0.5, still positive
   });
 });
 
@@ -208,7 +211,10 @@ describe('Negative Speed - EXP waveform (unipolar)', () => {
     expect(stateEnd.rawOutput).toBeLessThan(0.2);
   });
 
-  test('negative speed EXP has inverted output (-1 to 0)', () => {
+  test('negative speed EXP has flipped output (0 to 1) - Digitakt II verified', () => {
+    // Hardware behavior: negative speed flips unipolar waveforms
+    // EXP normally: 1→0 (decay)
+    // EXP speed-: 0→1 (attack/swell) via 1-x transformation
     const lfo = new LFO({
       waveform: 'EXP',
       speed: -16,
@@ -220,9 +226,14 @@ describe('Negative Speed - EXP waveform (unipolar)', () => {
     lfo.update(0);
     const stateStart = lfo.update(1);
 
-    // rawOutput is still 1 (EXP at phase 0), output is negated to -1
+    // rawOutput is still 1 (EXP at phase 0), but output is flipped: 1-1=0
     expect(stateStart.rawOutput).toBeCloseTo(1, 1);
-    expect(stateStart.output).toBeLessThan(-0.9); // Inverted!
+    expect(stateStart.output).toBeCloseTo(0, 1); // Flipped to 0
+
+    // Near end of cycle, rawOutput approaches 0, flipped to 1
+    const cycleMs = lfo.getTimingInfo().cycleTimeMs;
+    const stateEnd = lfo.update(cycleMs * 0.95);
+    expect(stateEnd.output).toBeGreaterThan(0.8); // Flipped: near 1
   });
 });
 

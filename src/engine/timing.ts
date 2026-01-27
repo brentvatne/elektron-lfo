@@ -101,10 +101,11 @@ export function calculateNoteValue(product: number): string {
 
   // For products < 128: slower than 1 bar
   const bars = 128 / product;
-  if (bars === Math.floor(bars)) {
-    return `${bars} bars`;
-  }
-  return `${bars.toFixed(1)} bars`;
+  // Round to 1 decimal place, then drop trailing .0 for whole numbers
+  const rounded = Math.round(bars * 10) / 10;
+  const isWhole = rounded === Math.floor(rounded);
+  const barsStr = isWhole ? String(Math.floor(rounded)) : rounded.toFixed(1);
+  return `${barsStr} bars`;
 }
 
 /**

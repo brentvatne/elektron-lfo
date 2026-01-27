@@ -70,8 +70,7 @@ function generateSawtooth(phase) {
 }
 function generateExponential(phase) {
   const k = 3;
-  const expK = Math.exp(-k);
-  return (Math.exp(-phase * k) - expK) / (1 - expK);
+  return 1 - (Math.exp(phase * k) - 1) / (Math.exp(k) - 1);
 }
 function generateRamp(phase) {
   return phase;
@@ -177,10 +176,10 @@ function calculateNoteValue(product) {
   if (product >= 128)
     return "1 bar";
   const bars = 128 / product;
-  if (bars === Math.floor(bars)) {
-    return `${bars} bars`;
-  }
-  return `${bars.toFixed(1)} bars`;
+  const rounded = Math.round(bars * 10) / 10;
+  const isWhole = rounded === Math.floor(rounded);
+  const barsStr = isWhole ? String(Math.floor(rounded)) : rounded.toFixed(1);
+  return `${barsStr} bars`;
 }
 function calculateTimingInfo(config, bpm) {
   const product = calculateProduct(config);
@@ -411,20 +410,29 @@ class LFO {
     if (shouldUpdatePhase) {
       const previousPhase = this.state.phase;
       let newPhase = this.state.phase + phaseIncrement * deltaMs;
+      let cycleCompleted = false;
       if (newPhase >= 1) {
         newPhase = newPhase % 1;
         this.state.cycleCount++;
+        cycleCompleted = true;
       } else if (newPhase < 0) {
         newPhase = 1 + newPhase % 1;
         if (newPhase === 1)
           newPhase = 0;
         this.state.cycleCount++;
+        cycleCompleted = true;
+      }
+      if (cycleCompleted && this.config.waveform === "RND") {
+        if (this.config.mode === "FRE" || this.config.mode === "TRG") {
+          this.state.randomValue = Math.random() * 2 - 1;
+          this.state.randomStep = Math.floor(newPhase * 16);
+        }
       }
       const stopCheck = checkModeStop(this.config, this.state, previousPhase, newPhase);
       if (stopCheck.shouldStop) {
         this.state.isRunning = false;
         if (this.config.mode === "ONE") {
-          newPhase = this.state.startPhaseNormalized;
+          newPhase = 1;
         } else if (this.config.mode === "HLF") {
           newPhase = (this.state.startPhaseNormalized + 0.5) % 1;
         }
@@ -450,7 +458,11 @@ class LFO {
       effectiveRawOutput = this.state.heldOutput;
     }
     if (this.config.speed < 0) {
-      effectiveRawOutput = -effectiveRawOutput;
+      if (isUnipolar(this.config.waveform)) {
+        effectiveRawOutput = 1 - effectiveRawOutput;
+      } else {
+        effectiveRawOutput = -effectiveRawOutput;
+      }
     }
     const depthScale = this.config.depth / 63;
     let scaledOutput = effectiveRawOutput * depthScale;
