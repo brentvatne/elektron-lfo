@@ -98,10 +98,6 @@ export function calculateFadeProgress(
   }
 
   const totalCycles = calculateFadeCycles(fadeValue);
-  if (totalCycles <= 0) {
-    return 1;
-  }
-
   const progress = elapsedCycles / totalCycles;
   return progress > 1 ? 1 : progress;
 }
