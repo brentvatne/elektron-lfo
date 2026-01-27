@@ -1,10 +1,27 @@
 {
   "name": "elektron-lfo",
-  "version": "1.0.17",
+  "version": "1.1.0",
   "description": "Elektron LFO engine simulator implementation with CLI visualization",
   "main": "dist/index.js",
   "module": "src/index.ts",
   "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./src/index.ts",
+      "require": "./dist/index.js"
+    },
+    "./core": {
+      "types": "./dist/core/index.d.ts",
+      "import": "./src/core/index.ts",
+      "require": "./dist/core/index.js"
+    }
+  },
+  "typesVersions": {
+    "*": {
+      "core": ["./dist/core/index.d.ts"]
+    }
+  },
   "bin": {
     "elektron-lfo": "src/cli/index.ts"
   },

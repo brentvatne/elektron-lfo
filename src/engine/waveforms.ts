@@ -1,83 +1,43 @@
 /**
  * Waveform generators for Elektron Digitakt II LFO
  *
- * Most waveforms are bipolar (-1 to +1).
- * RMP and EXP are unipolar (0 to +1) - depth parameter handles negative modulation.
+ * This module re-exports pure sampling functions from core/
+ * and provides the stateful generateWaveform/generateRandom functions
+ * needed by the engine.
  */
 
 import type { Waveform, LFOState } from './types';
 
-/**
- * Triangle waveform - Bipolar
- * Starts at 0, peaks at +1 at phase 0.25, troughs at -1 at phase 0.75
- */
-export function generateTriangle(phase: number): number {
-  if (phase < 0.25) {
-    return phase * 4; // 0 to +1
-  }
-  if (phase < 0.75) {
-    return 1 - (phase - 0.25) * 4; // +1 to -1
-  }
-  return -1 + (phase - 0.75) * 4; // -1 to 0
-}
+// Re-export pure sampling functions from core
+export {
+  sampleTriangle as generateTriangle,
+  sampleSine as generateSine,
+  sampleSquare as generateSquare,
+  sampleSawtooth as generateSawtooth,
+  sampleExpDecay as generateExponential,
+  sampleExpRise as generateExponentialRise,
+  sampleRamp as generateRamp,
+  isUnipolar,
+} from '../core/waveforms';
 
-/**
- * Sine waveform - Bipolar
- * Standard sine wave starting at 0
- */
-export function generateSine(phase: number): number {
-  return Math.sin(phase * 2 * Math.PI);
-}
-
-/**
- * Square waveform - Bipolar
- * +1 for first half, -1 for second half
- */
-export function generateSquare(phase: number): number {
-  return phase < 0.5 ? 1 : -1;
-}
-
-/**
- * Sawtooth waveform - Bipolar
- * Linear fall from +1 to -1 (matches Digitakt II behavior)
- */
-export function generateSawtooth(phase: number): number {
-  return 1 - phase * 2;
-}
-
-/**
- * Exponential decay - Unipolar (1 to 0)
- * Concave curve: fast initial drop, slow approach to 0
- * Used for positive speed
- */
-export function generateExponential(phase: number): number {
-  const k = 3;
-  const decay = Math.exp(-phase * k);
-  const endValue = Math.exp(-k);
-  return (decay - endValue) / (1 - endValue);
-}
-
-/**
- * Exponential rise - Unipolar (0 to 1)
- * Concave curve: slow initial rise, fast acceleration to 1
- * Used for negative speed to maintain concave shape
- */
-export function generateExponentialRise(phase: number): number {
-  const k = 3;
-  return (Math.exp(phase * k) - 1) / (Math.exp(k) - 1);
-}
-
-/**
- * Ramp waveform - Unipolar (0 to +1)
- * Linear rise from 0 to +1 (matches Digitakt II behavior)
- */
-export function generateRamp(phase: number): number {
-  return phase;
-}
+// Import for internal use
+import {
+  sampleTriangle,
+  sampleSine,
+  sampleSquare,
+  sampleSawtooth,
+  sampleExpDecay,
+  sampleRamp,
+  isUnipolar,
+} from '../core/waveforms';
 
 /**
  * Random waveform - Bipolar (-1 to +1)
  * Sample-and-hold with 16 steps per cycle (16x frequency)
+ *
+ * NOTE: This uses Math.random() for true randomness, unlike the seeded
+ * version in core/ which is deterministic. The engine needs true randomness
+ * to match Digitakt II behavior where each cycle produces new random values.
  *
  * Returns the current random value and potentially a new random value
  * if a step boundary was crossed.
@@ -119,17 +79,17 @@ export function generateWaveform(
 ): { value: number; newRandomValue?: number; newRandomStep?: number } {
   switch (waveform) {
     case 'TRI':
-      return { value: generateTriangle(phase) };
+      return { value: sampleTriangle(phase) };
     case 'SIN':
-      return { value: generateSine(phase) };
+      return { value: sampleSine(phase) };
     case 'SQR':
-      return { value: generateSquare(phase) };
+      return { value: sampleSquare(phase) };
     case 'SAW':
-      return { value: generateSawtooth(phase) };
+      return { value: sampleSawtooth(phase) };
     case 'EXP':
-      return { value: generateExponential(phase) };
+      return { value: sampleExpDecay(phase) };
     case 'RMP':
-      return { value: generateRamp(phase) };
+      return { value: sampleRamp(phase) };
     case 'RND': {
       const result = generateRandom(phase, state);
       return {
@@ -144,14 +104,6 @@ export function generateWaveform(
       throw new Error(`Unknown waveform: ${_exhaustive}`);
     }
   }
-}
-
-/**
- * Check if a waveform is unipolar (0 to +1) vs bipolar (-1 to +1)
- * RMP and EXP are unipolar - depth parameter handles negative modulation
- */
-export function isUnipolar(waveform: Waveform): boolean {
-  return waveform === 'RMP' || waveform === 'EXP';
 }
 
 /**
