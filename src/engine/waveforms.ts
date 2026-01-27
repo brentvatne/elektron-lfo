@@ -46,15 +46,25 @@ export function generateSawtooth(phase: number): number {
 }
 
 /**
- * Exponential waveform - Unipolar (0 to +1)
- * Decaying curve from +1 to 0 (matches Digitakt II behavior)
- * Fast initial decay, slowing toward the end (true exponential decay shape)
+ * Exponential decay - Unipolar (1 to 0)
+ * Concave curve: fast initial drop, slow approach to 0
+ * Used for positive speed
  */
 export function generateExponential(phase: number): number {
-  const k = 3; // Decay rate - controls steepness of decay
-  // True exponential decay normalized to [1, 0]
-  const expK = Math.exp(-k);
-  return (Math.exp(-phase * k) - expK) / (1 - expK);
+  const k = 3;
+  const decay = Math.exp(-phase * k);
+  const endValue = Math.exp(-k);
+  return (decay - endValue) / (1 - endValue);
+}
+
+/**
+ * Exponential rise - Unipolar (0 to 1)
+ * Concave curve: slow initial rise, fast acceleration to 1
+ * Used for negative speed to maintain concave shape
+ */
+export function generateExponentialRise(phase: number): number {
+  const k = 3;
+  return (Math.exp(phase * k) - 1) / (Math.exp(k) - 1);
 }
 
 /**

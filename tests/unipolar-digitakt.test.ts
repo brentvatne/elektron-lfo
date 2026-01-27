@@ -31,7 +31,8 @@ describe('EXP Waveform - Expected Behavior', () => {
       expect(generateExponential(0)).toBeCloseTo(1.0, 2);
     });
 
-    test('should return value < 0.5 at phase 0.5 (decaying)', () => {
+    test('should return value < 0.5 at phase 0.5 (concave decay)', () => {
+      // Concave decay: fast drop at start, slow approach to 0 at end
       const value = generateExponential(0.5);
       expect(value).toBeLessThan(0.5);
       expect(value).toBeGreaterThan(0);
@@ -332,6 +333,95 @@ describe('Depth Scaling Comparison', () => {
     expect(minCC).toBeGreaterThanOrEqual(64);
     expect(minCC).toBeLessThan(70);
     expect(maxCC).toBeGreaterThanOrEqual(103);
+  });
+});
+
+describe('Negative Speed (EXP concave rise)', () => {
+  const BPM = 120;
+  const DEPTH = 40;
+
+  test('EXP with negative speed should rise from 0 to 1 (concave)', () => {
+    const lfo = new LFO({
+      waveform: 'EXP',
+      speed: -16,
+      multiplier: 4,
+      depth: DEPTH,
+      startPhase: 0,
+      mode: 'TRG',
+    }, BPM);
+
+    lfo.trigger();
+    const state = lfo.update(1);
+    const cc = outputToCC(state.output);
+
+    // At phase 0, EXP with negative speed should be at center (value 0)
+    expect(cc).toBe(64);
+  });
+
+  test('EXP with negative speed should have concave rise shape', () => {
+    const lfo = new LFO({
+      waveform: 'EXP',
+      speed: -16,
+      multiplier: 4,
+      depth: DEPTH,
+      startPhase: 0,
+      mode: 'TRG',
+    }, BPM);
+
+    lfo.trigger();
+    const cycleMs = 4000;
+
+    const ccStart = outputToCC(lfo.update(1).output);
+    const ccMid = outputToCC(lfo.update(1 + cycleMs * 0.5).output);
+    const ccEnd = outputToCC(lfo.update(1 + cycleMs * 0.99).output);
+
+    // Should rise from 64 to 104
+    expect(ccStart).toBe(64);
+    expect(ccEnd).toBeGreaterThan(100);
+
+    // Concave rise: at midpoint, should still be closer to start (< 84)
+    // Linear would be 84, concave should be less
+    expect(ccMid).toBeLessThan(84);
+    expect(ccMid).toBeGreaterThan(64);
+  });
+
+  test('EXP positive and negative speed both have concave shape', () => {
+    // Positive speed: decay (1→0), concave means fast drop at start
+    const lfoDecay = new LFO({
+      waveform: 'EXP',
+      speed: 16,
+      multiplier: 4,
+      depth: DEPTH,
+      startPhase: 0,
+      mode: 'TRG',
+    }, BPM);
+
+    // Negative speed: rise (0→1), concave means slow rise at start
+    const lfoRise = new LFO({
+      waveform: 'EXP',
+      speed: -16,
+      multiplier: 4,
+      depth: DEPTH,
+      startPhase: 0,
+      mode: 'TRG',
+    }, BPM);
+
+    lfoDecay.trigger();
+    lfoRise.trigger();
+
+    const cycleMs = 4000;
+
+    // Get values at midpoint
+    lfoDecay.update(1);
+    lfoRise.update(1);
+    const decayMid = lfoDecay.update(1 + cycleMs * 0.5).output;
+    const riseMid = lfoRise.update(1 + cycleMs * 0.5).output;
+
+    // Both should be at similar distance from their midpoint
+    // Decay: 1→0, midpoint value ~0.18 (closer to 0)
+    // Rise: 0→1, midpoint value ~0.18 (closer to 0)
+    expect(decayMid).toBeLessThan(0.5);
+    expect(riseMid).toBeLessThan(0.5);
   });
 });
 

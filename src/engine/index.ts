@@ -32,6 +32,7 @@ export {
   generateSquare,
   generateSawtooth,
   generateExponential,
+  generateExponentialRise,
   generateRamp,
   generateRandom,
   generateWaveform,

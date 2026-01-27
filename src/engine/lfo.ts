@@ -10,7 +10,7 @@
 
 import type { LFOConfig, LFOState, TimingInfo } from './types';
 import { DEFAULT_CONFIG, createInitialState, clamp } from './types';
-import { generateWaveform, isUnipolar } from './waveforms';
+import { generateWaveform, isUnipolar, generateExponentialRise } from './waveforms';
 import {
   calculatePhaseIncrement,
   calculateTimingInfo,
@@ -67,13 +67,25 @@ export class LFO {
       let newPhase = this.state.phase + phaseIncrement * deltaMs;
 
       // Wrap phase to 0-1 range
+      let cycleCompleted = false;
       if (newPhase >= 1) {
         newPhase = newPhase % 1;
         this.state.cycleCount++;
+        cycleCompleted = true;
       } else if (newPhase < 0) {
         newPhase = 1 + (newPhase % 1);
         if (newPhase === 1) newPhase = 0;
         this.state.cycleCount++;
+        cycleCompleted = true;
+      }
+
+      // Regenerate RND waveform values at cycle end (for FRE/TRG modes only)
+      // ONE/HLF modes don't cycle - they stop, and only regenerate on retrigger
+      if (cycleCompleted && this.config.waveform === 'RND') {
+        if (this.config.mode === 'FRE' || this.config.mode === 'TRG') {
+          this.state.randomValue = Math.random() * 2 - 1;
+          this.state.randomStep = Math.floor(newPhase * 16);
+        }
       }
 
       // Check for mode-based stopping (ONE/HLF)
@@ -86,9 +98,15 @@ export class LFO {
 
       if (stopCheck.shouldStop) {
         this.state.isRunning = false;
-        // Snap to stop position
+        // Snap to stop position - stay at END of waveform curve, not start
+        // Hardware verified (Jan 2026): ONE mode stops at the visual end of the curve
+        // With SPH offset, you traverse a partial curve (SPH → end), not a full cycle
         if (this.config.mode === 'ONE') {
-          newPhase = this.state.startPhaseNormalized;
+          // Phase=1 is the end of the waveform curve
+          // Final output values for unipolar waveforms (EXP/RMP):
+          //   speed+ depth+ → 0,  speed+ depth- → 0
+          //   speed- depth+ → +1, speed- depth- → -1
+          newPhase = 1;
         } else if (this.config.mode === 'HLF') {
           newPhase = (this.state.startPhaseNormalized + 0.5) % 1;
         }
@@ -134,9 +152,22 @@ export class LFO {
       effectiveRawOutput = this.state.heldOutput;
     }
 
-    // Invert output for negative speed (phase still runs forward)
+    // Handle negative speed: flip waveform direction
+    // For EXP, use the rise formula to maintain concave shape
+    // For RMP (linear), 1-x works fine
+    // For bipolar waveforms, invert sign (-x) to reverse direction
     if (this.config.speed < 0) {
-      effectiveRawOutput = -effectiveRawOutput;
+      if (this.config.waveform === 'EXP') {
+        // EXP needs a different formula to stay concave when rising
+        // Re-sample using the rise formula instead of 1-decay
+        effectiveRawOutput = generateExponentialRise(this.state.phase);
+      } else if (isUnipolar(this.config.waveform)) {
+        // RMP: flip values (1-x works for linear)
+        effectiveRawOutput = 1 - effectiveRawOutput;
+      } else {
+        // Bipolar: invert polarity
+        effectiveRawOutput = -effectiveRawOutput;
+      }
     }
 
     // Apply depth

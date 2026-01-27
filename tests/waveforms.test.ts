@@ -5,6 +5,7 @@ import {
   generateSquare,
   generateSawtooth,
   generateExponential,
+  generateExponentialRise,
   generateRamp,
   generateRandom,
   generateWaveform,
@@ -158,11 +159,48 @@ describe('Exponential Waveform', () => {
     expect(Math.max(...samples)).toBeLessThanOrEqual(1);
   });
 
-  test('has decaying (exponential decay) curve shape', () => {
-    // At phase 0.5, should be greater than 0.5 (decay curve starts high)
+  test('has concave decay curve shape (fast start, slow end)', () => {
+    // Concave decay: at phase 0.5, value should be < 0.5
+    // Most of the decay happens in the first half
     const midValue = generateExponential(0.5);
-    expect(midValue).toBeGreaterThan(0.1);
     expect(midValue).toBeLessThan(0.5);
+    expect(midValue).toBeGreaterThan(0);
+  });
+});
+
+describe('Exponential Rise Waveform', () => {
+  test('starts at 0 at phase 0', () => {
+    expect(generateExponentialRise(0)).toBeCloseTo(0, 5);
+  });
+
+  test('rises to 1 at phase 1', () => {
+    expect(generateExponentialRise(1)).toBeCloseTo(1, 5);
+  });
+
+  test('is unipolar (0 to +1)', () => {
+    const samples = Array.from({ length: 100 }, (_, i) => generateExponentialRise(i / 100));
+    expect(Math.min(...samples)).toBeGreaterThanOrEqual(0);
+    expect(Math.max(...samples)).toBeLessThanOrEqual(1);
+  });
+
+  test('has concave rise curve shape (slow start, fast end)', () => {
+    // Concave rise: at phase 0.5, value should be < 0.5
+    // Most of the rise happens in the second half
+    const midValue = generateExponentialRise(0.5);
+    expect(midValue).toBeLessThan(0.5);
+    expect(midValue).toBeGreaterThan(0);
+  });
+
+  test('both EXP formulas are concave (value < 0.5 at midpoint)', () => {
+    // Both decay and rise should have value < 0.5 at midpoint
+    // This means both curves "bend" the same way
+    const decayMid = generateExponential(0.5);
+    const riseMid = generateExponentialRise(0.5);
+
+    expect(decayMid).toBeLessThan(0.5);
+    expect(riseMid).toBeLessThan(0.5);
+    // They should be approximately equal (same curvature)
+    expect(decayMid).toBeCloseTo(riseMid, 2);
   });
 });
 
