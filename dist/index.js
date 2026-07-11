@@ -49,8 +49,8 @@ function isValidMultiplier(value) {
   return VALID_MULTIPLIERS.includes(value);
 }
 
-// src/engine/waveforms.ts
-function generateTriangle(phase) {
+// src/core/waveforms.ts
+function sampleTriangle(phase) {
   if (phase < 0.25) {
     return phase * 4;
   }
@@ -59,22 +59,32 @@ function generateTriangle(phase) {
   }
   return -1 + (phase - 0.75) * 4;
 }
-function generateSine(phase) {
+function sampleSine(phase) {
   return Math.sin(phase * 2 * Math.PI);
 }
-function generateSquare(phase) {
+function sampleSquare(phase) {
   return phase < 0.5 ? 1 : -1;
 }
-function generateSawtooth(phase) {
+function sampleSawtooth(phase) {
   return 1 - phase * 2;
 }
-function generateExponential(phase) {
-  const k = 3;
-  return 1 - (Math.exp(phase * k) - 1) / (Math.exp(k) - 1);
-}
-function generateRamp(phase) {
+function sampleRamp(phase) {
   return phase;
 }
+function sampleExpDecay(phase) {
+  const k = 3;
+  const decay = Math.exp(-phase * k);
+  const endValue = Math.exp(-k);
+  return (decay - endValue) / (1 - endValue);
+}
+function sampleExpRise(phase) {
+  const k = 3;
+  return (Math.exp(phase * k) - 1) / (Math.exp(k) - 1);
+}
+function isUnipolar(waveform) {
+  return waveform === "EXP" || waveform === "RMP";
+}
+// src/engine/waveforms.ts
 function generateRandom(phase, state) {
   const stepsPerCycle = 16;
   const currentStep = Math.floor(phase * stepsPerCycle);
@@ -95,17 +105,17 @@ function generateRandom(phase, state) {
 function generateWaveform(waveform, phase, state) {
   switch (waveform) {
     case "TRI":
-      return { value: generateTriangle(phase) };
+      return { value: sampleTriangle(phase) };
     case "SIN":
-      return { value: generateSine(phase) };
+      return { value: sampleSine(phase) };
     case "SQR":
-      return { value: generateSquare(phase) };
+      return { value: sampleSquare(phase) };
     case "SAW":
-      return { value: generateSawtooth(phase) };
+      return { value: sampleSawtooth(phase) };
     case "EXP":
-      return { value: generateExponential(phase) };
+      return { value: sampleExpDecay(phase) };
     case "RMP":
-      return { value: generateRamp(phase) };
+      return { value: sampleRamp(phase) };
     case "RND": {
       const result = generateRandom(phase, state);
       return {
@@ -119,9 +129,6 @@ function generateWaveform(waveform, phase, state) {
       throw new Error(`Unknown waveform: ${_exhaustive}`);
     }
   }
-}
-function isUnipolar(waveform) {
-  return waveform === "RMP" || waveform === "EXP";
 }
 function getWaveformRange(waveform) {
   if (isUnipolar(waveform)) {
@@ -321,21 +328,11 @@ function resetsFadeOnTrigger(mode) {
   return mode !== "FRE";
 }
 
-// src/engine/fade.ts
-function calculateFadeMultiplier(fadeValue, fadeProgress) {
-  if (fadeValue === 0) {
-    return 1;
-  }
-  const progress = Math.max(0, Math.min(1, fadeProgress));
-  if (fadeValue < 0) {
-    return progress;
-  } else {
-    return 1 - progress;
-  }
-}
+// src/core/fade.ts
 function calculateFadeCycles(fadeValue) {
-  if (fadeValue === 0)
+  if (fadeValue === 0) {
     return 0;
+  }
   const absFade = Math.abs(fadeValue);
   if (absFade <= 16) {
     return Math.max(0.5, 0.1 * absFade + 0.6);
@@ -343,6 +340,18 @@ function calculateFadeCycles(fadeValue) {
   const baseAt16 = 2.2;
   return baseAt16 * Math.pow(2, (absFade - 16) / 4.5);
 }
+function calculateFadeMultiplier(fadeValue, fadeProgress) {
+  if (fadeValue === 0) {
+    return 1;
+  }
+  const progress = fadeProgress < 0 ? 0 : fadeProgress > 1 ? 1 : fadeProgress;
+  if (fadeValue < 0) {
+    return progress;
+  } else {
+    return 1 - progress;
+  }
+}
+// src/engine/fade.ts
 function updateFade(config, state, cycleTimeMs, deltaMs) {
   if (config.fade === 0 || config.mode === "FRE") {
     return {
@@ -458,7 +467,9 @@ class LFO {
       effectiveRawOutput = this.state.heldOutput;
     }
     if (this.config.speed < 0) {
-      if (isUnipolar(this.config.waveform)) {
+      if (this.config.waveform === "EXP") {
+        effectiveRawOutput = sampleExpRise(this.state.phase);
+      } else if (isUnipolar(this.config.waveform)) {
         effectiveRawOutput = 1 - effectiveRawOutput;
       } else {
         effectiveRawOutput = -effectiveRawOutput;
@@ -549,13 +560,14 @@ export {
   handleTrigger,
   getWaveformRange,
   generateWaveform,
-  generateTriangle,
-  generateSquare,
-  generateSine,
-  generateSawtooth,
+  sampleTriangle as generateTriangle,
+  sampleSquare as generateSquare,
+  sampleSine as generateSine,
+  sampleSawtooth as generateSawtooth,
   generateRandom,
-  generateRamp,
-  generateExponential,
+  sampleRamp as generateRamp,
+  sampleExpRise as generateExponentialRise,
+  sampleExpDecay as generateExponential,
   formatFrequency,
   formatCycleTime,
   createInitialState,

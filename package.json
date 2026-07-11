@@ -1,6 +1,6 @@
 {
   "name": "elektron-lfo",
-  "version": "1.1.1",
+  "version": "1.3.0",
   "description": "Elektron LFO engine simulator implementation with CLI visualization",
   "main": "dist/index.js",
   "module": "src/index.ts",
